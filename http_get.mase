@@ -1,0 +1,28 @@
+<%args>
+$url
+</%args>
+<%init>
+use LWP::Simple;
+use LWP::UserAgent;
+use HTTP::Request;
+use HTTP::Response;
+
+# Init virtual browser with 10 sec. timeout
+my $browser = LWP::UserAgent->new();
+$browser->timeout(10);
+
+# Init request
+my $request = HTTP::Request->new(GET => $url);
+#$request->header('Accept' => 'text/html');
+#$request->header('Accept' => 'application/rdf+xml');
+
+# Send request
+my $response = $browser->request($request);
+if ($response->is_error()) {
+	printf("%s\n", $response->status_line);
+}
+my $contents = $response->content();
+
+# Return response body
+return $contents;
+</%init>

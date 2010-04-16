@@ -1,0 +1,62 @@
+<%args>
+$word
+</%args>
+
+<& header.mase, title=>$word, include_search_form=>"true" &>
+
+<h1><% $word %></h1>
+
+<%perl>
+use XML::XPath;
+use XML::XPath::XMLParser;
+
+# Define namespace
+my $namespace = "http://www.wellput.ca/";
+
+# Inst array of ...
+my @articles_conjunctions = ('a', 'an', 'as', 'and', 'but', 'for', 'is', 'in', 'my', 'no', 'nor', 'of', 'on', 'or', 'the', 'than', 'to');
+my %is_article_conjunction;
+for (@articles_conjunctions) { $is_article_conjunction{$_} = 1; }
+
+# Get definition
+my $url_dictionary = "http://services.aonaware.com/DictService/DictService.asmx/DefineInDict?dictId=wn&word=$word";
+my $definition_xml = $m->comp('http_get.mase', url=>"$url_dictionary"); 
+
+# Get quotes
+my $quotes_xml;
+if (($word ne undef) && length($word) > 1 && ($is_article_conjunction{$word} != 1)) {
+ 	my $url_quotes = "http://localhost:6690/sparql?query=SELECT+?s+?o+WHERE+{?s+<http://www.wellput.ca/said>+?o+.+FILTER+(regex(?o,+\"$word\"))+.+}";
+ 	$quotes_xml = $m->comp('http_get.mase', url=>"$url_quotes");
+}
+
+# Parse definition
+my $xp_def = XML::XPath->new(xml => $definition_xml);
+my $definition = $xp_def->findvalue('/WordDefinition/Definitions/Definition/WordDefinition');
+
+# Parse quotes
+my @quotes;
+if ($quotes_xml ne undef) {
+	my $xp_quotes = XML::XPath->new(xml => $quotes_xml);
+	my $nodeset = $xp_quotes->find('/sparql/results/result');
+	foreach my $node ($nodeset->get_nodelist) {
+
+        	my $str = XML::XPath::XMLParser::as_string($node);
+	        my $xp_result = XML::XPath->new(xml => $str);
+
+	        my $uri = $xp_result->findvalue('/result/binding/uri');
+		$uri =~ s/$namespace//;
+	        $uri =~ s/_/ /;
+	        my $literal = $xp_result->findvalue('/result/binding/literal');
+	        push(@quotes, $uri . ": " . $literal . "\n");
+	}
+}
+</%perl>
+
+<p><% $definition %></p>
+
+<h3>Who said it:</h3>
+% foreach my $quote (@quotes) {
+<p><% $quote %></p>
+% }
+
+<& footer.mase &>

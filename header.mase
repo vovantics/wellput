@@ -1,0 +1,19 @@
+<%args> 
+$title
+$include_search_form 
+</%args> 
+<html>
+	<head>
+		<title><% $title %></title>
+	</head>
+<body>
+% if ($include_search_form ne undef && $include_search_form ne "false") {
+	<div>
+		<a href="http://www.wellput.ca" style="float:left;"><img src="wellput-small.png" border="0"/></a>
+			<form method=post action="response" style="text-align:left; padding: 50px 0px 10px 220px;">
+                	<input type=text name=word value=<% $title %> size="40">
+                	<input type=submit value="Search">
+        	</form>
+	</div>
+<div style="clear:left;"></div>	
+% }
